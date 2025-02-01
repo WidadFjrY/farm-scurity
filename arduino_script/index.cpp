@@ -164,6 +164,12 @@ void captureAndSend()
 
     if (httpResponseCode > 0)
     {
+        if (httpResponseCode == 200)
+        {
+            client.publish(publish_topic, "ok");
+            Serial.println("Pesan 'ok' dikirim ke MQTT!");
+        }
+
         Serial.print("Image uploaded, response code: ");
         Serial.println(httpResponseCode);
     }
@@ -179,7 +185,14 @@ void captureAndSend()
 
 void sendMotionInfo()
 {
-    DynamicJsonDocument doc(256);
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb)
+    {
+        Serial.println("Gagal mengambil gambar");
+        return;
+    }
+
+    StaticJsonDocument<256> doc;
     doc["device_id"] = "ESP32-CAM";
     doc["timestamp"] = millis();
     doc["motion_detected"] = true;
@@ -187,24 +200,71 @@ void sendMotionInfo()
     String jsonData;
     serializeJson(doc, jsonData);
 
-    HTTPClient http;
-    http.begin(api_url);
-    http.addHeader("Content-Type", "application/json");
+    String boundary = "Boundary-" + String(millis(), HEX);
 
-    int httpResponseCode = http.POST(jsonData);
+    HTTPClient http;
+    if (!http.begin(api_url))
+    {
+        Serial.println("Gagal menghubungkan ke server");
+        esp_camera_fb_return(fb);
+        return;
+    }
+
+    http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+    std::string body = "--" + boundary + "\r\n"
+                                         "Content-Disposition: form-data; name=\"metadata\"\r\n"
+                                         "Content-Type: application/json\r\n\r\n" +
+                       jsonData + "\r\n" +
+                       "--" + boundary + "\r\n"
+                                         "Content-Disposition: form-data; name=\"image\"; filename=\"motion.jpg\"\r\n"
+                                         "Content-Type: image/jpeg\r\n\r\n";
+
+    std::string footer = "\r\n--" + boundary + "--\r\n";
+
+    size_t contentLength = body.length() + fb->len + footer.length();
+
+    int httpResponseCode = http.POST(
+        [&, sent = size_t(0)](uint8_t *buffer, size_t maxLen) mutable -> size_t
+        {
+            size_t toSend = 0;
+
+            if (sent < body.length())
+            {
+                toSend = min(body.length() - sent, maxLen);
+                memcpy(buffer, body.c_str() + sent, toSend);
+            }
+            else if (sent < (body.length() + fb->len))
+            {
+                size_t imgOffset = sent - body.length();
+                toSend = min(fb->len - imgOffset, maxLen);
+                memcpy(buffer, fb->buf + imgOffset, toSend);
+            }
+            else
+            {
+                size_t footerOffset = sent - (body.length() + fb->len);
+                toSend = min(footer.length() - footerOffset, maxLen);
+                memcpy(buffer, footer.c_str() + footerOffset, toSend);
+            }
+
+            sent += toSend;
+            return toSend;
+        },
+        contentLength);
 
     if (httpResponseCode > 0)
     {
-        Serial.print("Info motion terkirim, response code: ");
+        Serial.print("Motion info + gambar terkirim. Response code: ");
         Serial.println(httpResponseCode);
     }
     else
     {
-        Serial.print("Gagal mengirim info motion: ");
+        Serial.print("Gagal mengirim: ");
         Serial.println(httpResponseCode);
     }
 
     http.end();
+    esp_camera_fb_return(fb);
 }
 
 void setup()
@@ -232,7 +292,6 @@ void loop()
     if (pirState == HIGH)
     {
         Serial.println("Gerakan terdeteksi!");
-        captureAndSend();
         sendMotionInfo();
         client.publish(publish_topic, "Motion detected via PIR");
         delay(5000);

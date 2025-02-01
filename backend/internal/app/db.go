@@ -2,18 +2,26 @@ package app
 
 import (
 	"farm-scurity/domain/model"
+	"log"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	_ "modernc.org/sqlite" // Menggunakan modernc.org/sqlite untuk SQLite tanpa CGO
 )
 
+// NewDB membuat koneksi database SQLite
 func NewDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("farm-scurity.db"), &gorm.Config{})
+	dsn := "file:farm-scurity.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)"
+	db, err := gorm.Open(sqlite.Dialector{DriverName: "sqlite", DSN: dsn}, &gorm.Config{})
 	if err != nil {
-		panic(err)
+		log.Fatalf("Gagal menghubungkan ke database: %v", err)
 	}
 
-	db.AutoMigrate(&model.History{})
+	if err := db.AutoMigrate(&model.Picture{}, &model.History{}); err != nil {
+		log.Fatalf("Gagal melakukan migrasi database: %v", err)
+	}
+
+	log.Println("Database berhasil diinisialisasi!")
 
 	return db
 }

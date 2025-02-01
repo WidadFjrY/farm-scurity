@@ -3,6 +3,7 @@ package controller
 import (
 	"farm-scurity/domain/web"
 	"farm-scurity/internal/broker"
+	"farm-scurity/internal/service"
 	"farm-scurity/pkg/exception"
 	"farm-scurity/pkg/helper"
 	"net/http"
@@ -10,10 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UserControllerImpl struct{}
+type UserControllerImpl struct {
+	PictureServ service.PictureService
+}
 
-func NewUserController() UserController {
-	return &UserControllerImpl{}
+func NewUserController(pictureServ service.PictureService) UserController {
+	return &UserControllerImpl{PictureServ: pictureServ}
 }
 
 func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
@@ -24,9 +27,11 @@ func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 		MsgResp:  "ok",
 	}
 
-	response := broker.MQTTRequest(mqttRequest)
-	if response {
-		helper.Response(ctx, http.StatusOK, "Ok", "")
+	respMQTT := broker.MQTTRequest(mqttRequest)
+
+	if respMQTT {
+		response := controller.PictureServ.GetLastPicture(ctx.Request.Context())
+		helper.Response(ctx, http.StatusOK, "Ok", response)
 	}
 
 	panic(exception.NewBadRequestError("failed to capture"))

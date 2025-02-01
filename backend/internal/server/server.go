@@ -2,7 +2,6 @@ package server
 
 import (
 	"farm-scurity/internal/app"
-	"farm-scurity/internal/controller"
 	"farm-scurity/internal/di"
 	"farm-scurity/internal/middleware"
 	"farm-scurity/pkg/helper"
@@ -18,11 +17,14 @@ func Run() {
 	gin.Use(middleware.ErrorHandling())
 
 	historiDI := di.HistoryDI(db)
-
-	userController := controller.NewUserController()
+	UserDI := di.UserDI(db)
+	DeviceDI := di.DeviceDI(db)
 
 	router.HistoryRouter(gin, historiDI)
-	router.UserRouter(gin, userController)
+	router.UserRouter(gin, UserDI)
+	router.DeviceRouter(gin, DeviceDI)
+
+	gin.Static("api/public/", "./public/images")
 
 	err := gin.Run("localhost:8080")
 	helper.Err(err)
