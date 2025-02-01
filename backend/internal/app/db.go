@@ -6,10 +6,9 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	_ "modernc.org/sqlite" // Menggunakan modernc.org/sqlite untuk SQLite tanpa CGO
+	_ "modernc.org/sqlite"
 )
 
-// NewDB membuat koneksi database SQLite
 func NewDB() *gorm.DB {
 	dsn := "file:farm-scurity.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)"
 	db, err := gorm.Open(sqlite.Dialector{DriverName: "sqlite", DSN: dsn}, &gorm.Config{})
