@@ -21,11 +21,12 @@ func NewHistoryService(db *gorm.DB, repo repository.HistoryRepository) HistorySe
 	return &HistoryServiceImpl{DB: db, Repo: repo}
 }
 
-func (serv *HistoryServiceImpl) Create(ctx context.Context, operation string) {
+func (serv *HistoryServiceImpl) Create(ctx context.Context, operation string, pictureId string) {
 	rand.NewSource(time.Now().Unix())
 	err := serv.DB.Transaction(func(tx *gorm.DB) error {
 		serv.Repo.Create(ctx, tx, model.History{
 			ID:        helper.GenerateRandomString(15),
+			PictureID: &pictureId,
 			Operation: operation,
 		})
 		return nil
@@ -40,6 +41,7 @@ func (serv *HistoryServiceImpl) GetAll(ctx context.Context) []web.HistoryRespons
 		for _, historiModel := range serv.Repo.GetAll(ctx, tx) {
 			history := web.HistoryResponse{
 				ID:        historiModel.ID,
+				PictureID: *historiModel.PictureID,
 				Operation: historiModel.Operation,
 				CreatedAt: historiModel.CreatedAt,
 			}
@@ -63,10 +65,10 @@ func (serv *HistoryServiceImpl) GetById(ctx context.Context, historyId string) w
 	helper.Err(err)
 
 	return web.HistoryResponse{
-		ID:         history.ID,
-		Operation:  history.Operation,
-		URLPicture: history.URLPicture.URL,
-		CreatedAt:  history.CreatedAt,
+		ID:        history.ID,
+		Operation: history.Operation,
+		PictureID: *history.PictureID,
+		CreatedAt: history.CreatedAt,
 	}
 }
 

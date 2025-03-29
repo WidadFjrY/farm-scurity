@@ -1,15 +1,15 @@
 package controller
 
 import (
-	"encoding/json"
 	"farm-scurity/domain/web"
 	"farm-scurity/internal/broker"
 	"farm-scurity/internal/service"
 	"farm-scurity/pkg/exception"
 	"farm-scurity/pkg/helper"
 	"fmt"
+	"io"
 	"net/http"
-	"strings"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,75 +17,62 @@ import (
 type DeviceControllerImpl struct {
 	HistoryServ service.HistoryService
 	PictureServ service.PictureService
+	DeviceServ  service.DeviceService
 }
 
-func NewDeviceController(historyServ service.HistoryService, pictureServ service.PictureService) DeviceController {
-	return &DeviceControllerImpl{HistoryServ: historyServ, PictureServ: pictureServ}
+func NewDeviceController(historyServ service.HistoryService, pictureServ service.PictureService, deviceServ service.DeviceService) DeviceController {
+	return &DeviceControllerImpl{HistoryServ: historyServ, PictureServ: pictureServ, DeviceServ: deviceServ}
 }
 
 func (control *DeviceControllerImpl) Upload(ctx *gin.Context) {
-	file, err := ctx.FormFile("image")
-	helper.Err(err)
+	pictureId := ctx.Params.ByName("picture_id")
 
-	allowedExtensionImage := map[string]bool{
-		"jpg":  true,
-		"png":  true,
-		"jpeg": true,
+	contentType := ctx.GetHeader("Content-Type")
+	if contentType != "image/jpeg" {
+		panic(exception.NewBadRequestError("Invalid Content-Type! Expected image/jpeg"))
 	}
 
-	extension := strings.Split(file.Filename, ".")[1]
-	filePath := fmt.Sprintf("public/images/%s.%s", helper.GenerateRandomString(15), extension)
-
-	if !allowedExtensionImage[extension] {
-		panic(exception.NewBadRequestError("file not supported! file must be jpg/png/jpeg"))
-	}
-
-	err = ctx.SaveUploadedFile(file, filePath)
+	body, err := io.ReadAll(ctx.Request.Body)
 	helper.Err(err)
-	control.PictureServ.Save(ctx.Request.Context(), filePath, false)
+
+	filePath := fmt.Sprintf("public/images/%s.jpg", pictureId)
+
+	err = os.WriteFile(filePath, body, 0644)
+	helper.Err(err)
+
+	control.PictureServ.Save(ctx.Request.Context(), filePath, pictureId)
+
 	helper.Response(ctx, http.StatusOK, "Ok", "success")
 }
 
 func (control *DeviceControllerImpl) MotionDetected(ctx *gin.Context) {
-	metadataJSON := ctx.PostForm("metadata")
 	var request web.MotionDetectedRequest
+	pictureId := ctx.Params.ByName("picture_id")
 
-	if err := json.Unmarshal([]byte(metadataJSON), &request); err != nil {
-		helper.Response(ctx, http.StatusBadRequest, "Invalid JSON metadata", nil)
-		return
-	}
+	err := ctx.ShouldBind(&request)
+	helper.Err(err)
 
 	if request.MotionDetected {
-		control.HistoryServ.Create(ctx.Request.Context(), "Gerakan Terdeteksi")
+		control.HistoryServ.Create(ctx.Request.Context(), "Gerakan Terdeteksi", pictureId)
 		broker.MQTTRequest(web.MQTTRequest{
 			ClientId: "SERVER",
 			Topic:    "broker/farm-scurity/notification",
-			Payload:  "Gerakan Terdeteksi!",
+			Payload:  fmt.Sprintf("Gerakan Terdeteksi dari Sensor PIR dengan ID %s", request.DeviceId),
 			MsgResp:  "ok",
 		})
 	}
 
-	file, err := ctx.FormFile("image")
-	if err != nil {
-		helper.Response(ctx, http.StatusBadRequest, "Image not found", nil)
-		return
-	}
+	helper.Response(ctx, http.StatusOK, "Ok", "")
+}
 
-	allowedExtensionImage := map[string]bool{
-		"jpg":  true,
-		"png":  true,
-		"jpeg": true,
-	}
+func (control *DeviceControllerImpl) GetDevices(ctx *gin.Context) {
+	helper.Response(ctx, http.StatusOK, "Ok", control.DeviceServ.GetDevices(ctx.Request.Context()))
+}
 
-	extension := strings.Split(file.Filename, ".")[1]
-	filePath := fmt.Sprintf("public/images/%s.%s", helper.GenerateRandomString(15), extension)
+func (control *DeviceControllerImpl) SetIsActive(ctx *gin.Context) {
+	var request web.SetIsActiveRequest
+	ctx.ShouldBind(&request)
 
-	if !allowedExtensionImage[extension] {
-		panic(exception.NewBadRequestError("file not supported! file must be jpg/png/jpeg"))
-	}
-
-	err = ctx.SaveUploadedFile(file, filePath)
-	helper.Err(err)
-
-	control.PictureServ.Save(ctx.Request.Context(), filePath, true)
+	control.DeviceServ.SetIsActive(ctx.Request.Context(), request)
+	helper.Response(ctx, http.StatusOK, "Ok", "")
 }

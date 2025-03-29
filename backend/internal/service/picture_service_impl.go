@@ -21,13 +21,12 @@ func NewPictureRepository(db *gorm.DB, repo repository.PictureRepository) Pictur
 	return &PictureServiceImpl{DB: db, Repo: repo}
 }
 
-func (serv *PictureServiceImpl) Save(ctx context.Context, filePath string, isFromMotionDetection bool) {
+func (serv *PictureServiceImpl) Save(ctx context.Context, filePath string, pictureId string) {
 	rand.NewSource(time.Now().Unix())
 	err := serv.DB.Transaction(func(tx *gorm.DB) error {
 		serv.Repo.Save(ctx, tx, model.Picture{
-			ID:                    helper.GenerateRandomString(15),
-			URL:                   filePath,
-			IsFromMotionDetection: isFromMotionDetection,
+			ID:  pictureId,
+			URL: filePath,
 		})
 		return nil
 	})
@@ -40,10 +39,9 @@ func (serv *PictureServiceImpl) GetAll(ctx context.Context) []web.GetPictureResp
 	err := serv.DB.Transaction(func(tx *gorm.DB) error {
 		for _, picture := range serv.Repo.GetAll(ctx, tx) {
 			pictures = append(pictures, web.GetPictureResponse{
-				ID:                    picture.ID,
-				URL:                   picture.URL,
-				IsFromMotionDetection: picture.IsFromMotionDetection,
-				CreatedAt:             picture.CreatedAt,
+				ID:        picture.ID,
+				URL:       picture.URL,
+				CreatedAt: picture.CreatedAt,
 			})
 		}
 		return nil
@@ -63,10 +61,9 @@ func (serv *PictureServiceImpl) GetById(ctx context.Context, pictureId string) w
 	helper.Err(err)
 
 	return web.GetPictureResponse{
-		ID:                    picture.ID,
-		URL:                   picture.URL,
-		IsFromMotionDetection: picture.IsFromMotionDetection,
-		CreatedAt:             picture.CreatedAt,
+		ID:        picture.ID,
+		URL:       picture.URL,
+		CreatedAt: picture.CreatedAt,
 	}
 }
 
@@ -80,9 +77,8 @@ func (serv *PictureServiceImpl) GetLastPicture(ctx context.Context) web.GetPictu
 	helper.Err(err)
 
 	return web.GetPictureResponse{
-		ID:                    picture.ID,
-		URL:                   picture.URL,
-		IsFromMotionDetection: picture.IsFromMotionDetection,
-		CreatedAt:             picture.CreatedAt,
+		ID:        picture.ID,
+		URL:       picture.URL,
+		CreatedAt: picture.CreatedAt,
 	}
 }

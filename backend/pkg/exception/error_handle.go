@@ -2,6 +2,7 @@ package exception
 
 import (
 	"farm-scurity/domain/web"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -44,6 +45,7 @@ func badRequestError(gin *gin.Context, err interface{}) bool {
 }
 
 func internalServerError(gin *gin.Context, err interface{}) {
+	fmt.Println(err)
 	gin.JSON(http.StatusInternalServerError, web.ErrorResponse{
 		Code:    http.StatusInternalServerError,
 		Status:  "Internal Server Error",

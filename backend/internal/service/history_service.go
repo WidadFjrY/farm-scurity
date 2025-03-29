@@ -6,7 +6,7 @@ import (
 )
 
 type HistoryService interface {
-	Create(ctx context.Context, operation string)
+	Create(ctx context.Context, operation string, pictureId string)
 	GetAll(ctx context.Context) []web.HistoryResponse
 	GetById(ctx context.Context, historyId string) web.HistoryResponse
 	DeleteById(ctx context.Context, historyId string)

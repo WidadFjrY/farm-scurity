@@ -16,7 +16,7 @@ func NewDB() *gorm.DB {
 		log.Fatalf("Gagal menghubungkan ke database: %v", err)
 	}
 
-	if err := db.AutoMigrate(&model.Picture{}, &model.History{}); err != nil {
+	if err := db.AutoMigrate(&model.Picture{}, &model.History{}, &model.Device{}); err != nil {
 		log.Fatalf("Gagal melakukan migrasi database: %v", err)
 	}
 

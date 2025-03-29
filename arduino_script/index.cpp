@@ -13,7 +13,7 @@ const int mqtt_port = 1883;
 const char *mqtt_user = "user";
 const char *mqtt_pass = "password";
 const char *subscribe_topic = "broker/farm-scurity";
-const char *publish_topic = "esp32-cam/status";
+const char *publish_topic = "broker/farm-scurity";
 const char *api_url = "http://localhost:8080/api/motion-detected";
 
 const int pirPin = 13;

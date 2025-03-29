@@ -8,24 +8,26 @@ import (
 	"farm-scurity/router"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 func Run() {
 	db := app.NewDB()
+	validator := validator.New()
 
 	gin := gin.Default()
 	gin.Use(middleware.ErrorHandling())
 
 	historiDI := di.HistoryDI(db)
 	UserDI := di.UserDI(db)
-	DeviceDI := di.DeviceDI(db)
+	DeviceDI := di.DeviceDI(db, validator)
 
 	router.HistoryRouter(gin, historiDI)
 	router.UserRouter(gin, UserDI)
 	router.DeviceRouter(gin, DeviceDI)
 
-	gin.Static("api/public/", "./public/images")
+	gin.Static("api/public/images", "./public/images")
 
-	err := gin.Run("localhost:8080")
+	err := gin.Run(":8080")
 	helper.Err(err)
 }

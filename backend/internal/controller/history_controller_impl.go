@@ -3,6 +3,7 @@ package controller
 import (
 	"farm-scurity/internal/service"
 	"farm-scurity/pkg/helper"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,10 +14,12 @@ type HistoryControllerImpl struct {
 }
 
 func NewHistoryController(serv service.HistoryService) HistoryController {
-	return &HistoryControllerImpl{}
+	return &HistoryControllerImpl{Serv: serv}
 }
 
 func (controller *HistoryControllerImpl) GetAll(ctx *gin.Context) {
+	fmt.Println("Test")
+
 	response := controller.Serv.GetAll(ctx.Request.Context())
 	helper.Response(ctx, http.StatusOK, "Ok", response)
 }

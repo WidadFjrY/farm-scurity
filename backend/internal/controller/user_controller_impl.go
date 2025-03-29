@@ -32,39 +32,42 @@ func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 	if respMQTT {
 		response := controller.PictureServ.GetLastPicture(ctx.Request.Context())
 		helper.Response(ctx, http.StatusOK, "Ok", response)
+	} else {
+		panic(exception.NewBadRequestError("failed to capture"))
 	}
 
-	panic(exception.NewBadRequestError("failed to capture"))
 }
 
 func (controller *UserControllerImpl) TurnOn(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
 		Topic:    "broker/farm-scurity",
-		Payload:  "speaker_on",
+		Payload:  "ALARM_ON",
 		MsgResp:  "ok",
 	}
 
-	response := broker.MQTTRequest(mqttRequest)
-	if response {
+	respMQTT := broker.MQTTRequest(mqttRequest)
+	if respMQTT {
 		helper.Response(ctx, http.StatusOK, "Ok", "")
+	} else {
+		panic(exception.NewBadRequestError("failed to activate speaker"))
 	}
 
-	panic(exception.NewBadRequestError("failed to activate speaker"))
 }
 
 func (controller *UserControllerImpl) TurnOff(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
 		Topic:    "broker/farm-scurity",
-		Payload:  "speaker_off",
+		Payload:  "ALARM_OFF",
 		MsgResp:  "ok",
 	}
 
-	response := broker.MQTTRequest(mqttRequest)
-	if response {
+	respMQTT := broker.MQTTRequest(mqttRequest)
+	if respMQTT {
 		helper.Response(ctx, http.StatusOK, "Ok", "")
+	} else {
+		panic(exception.NewBadRequestError("failed to deactivate speaker"))
 	}
 
-	panic(exception.NewBadRequestError("failed to deactivate speaker"))
 }
