@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,10 +54,10 @@ func (control *DeviceControllerImpl) MotionDetected(ctx *gin.Context) {
 	helper.Err(err)
 
 	if request.MotionDetected {
-		control.HistoryServ.Create(ctx.Request.Context(), "Gerakan Terdeteksi", pictureId)
+		control.HistoryServ.Create(ctx.Request.Context(), "Gerakan Terdeteksi", pictureId, fmt.Sprintf("Gerakan Terdeteksi dari Sensor PIR dengan ID  %s", request.DeviceId))
 		broker.MQTTRequest(web.MQTTRequest{
 			ClientId: "SERVER",
-			Topic:    "broker/farm-scurity/notification",
+			Topic:    "broker/farm-security/notification",
 			Payload:  fmt.Sprintf("Gerakan Terdeteksi dari Sensor PIR dengan ID %s", request.DeviceId),
 			MsgResp:  "ok",
 		})
@@ -73,6 +74,18 @@ func (control *DeviceControllerImpl) SetIsActive(ctx *gin.Context) {
 	var request web.SetIsActiveRequest
 	ctx.ShouldBind(&request)
 
-	control.DeviceServ.SetIsActive(ctx.Request.Context(), request)
-	helper.Response(ctx, http.StatusOK, "Ok", "")
+	isSuccess, _ := broker.MQTTRequest(web.MQTTRequest{
+		ClientId: "SERVER",
+		Topic:    "broker/farm-security",
+		Payload:  fmt.Sprintf("DISABLE SENSOR ID: %s, IsActive: %s", request.ID, strconv.FormatBool(*request.IsActive)),
+		MsgResp:  "ok",
+	})
+
+	if isSuccess {
+		control.DeviceServ.SetIsActive(ctx.Request.Context(), request)
+		helper.Response(ctx, http.StatusOK, "Ok", "")
+		return
+	}
+
+	panic(exception.NewBadRequestError("Gagal melakukan operasi"))
 }

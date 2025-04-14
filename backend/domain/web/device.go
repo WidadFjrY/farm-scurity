@@ -16,5 +16,5 @@ type Device struct {
 
 type SetIsActiveRequest struct {
 	ID       string `json:"id" validate:"required"`
-	IsActive bool   `json:"is_active" validate:"required"`
+	IsActive *bool  `json:"is_active" validate:"required"`
 }

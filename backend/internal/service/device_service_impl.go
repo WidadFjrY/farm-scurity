@@ -45,7 +45,7 @@ func (serv *DeviceServiceImpl) SetIsActive(ctx context.Context, request web.SetI
 	helper.Err(serv.DB.Transaction(func(tx *gorm.DB) error {
 		serv.Repo.SetIsActive(ctx, tx, model.Device{
 			ID:       request.ID,
-			IsActive: request.IsActive,
+			IsActive: *request.IsActive,
 		})
 		return nil
 	}))

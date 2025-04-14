@@ -25,7 +25,7 @@ func (repo *HistoryRepositoryImpl) Create(ctx context.Context, tx *gorm.DB, hist
 func (repo *HistoryRepositoryImpl) GetAll(ctx context.Context, tx *gorm.DB) []model.History {
 	var histories []model.History
 
-	err := tx.WithContext(ctx).Find(&histories).Error
+	err := tx.WithContext(ctx).Order("created_at DESC").Find(&histories).Error
 	helper.Err(err)
 
 	return histories

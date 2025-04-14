@@ -7,6 +7,7 @@ import (
 	"farm-scurity/pkg/exception"
 	"farm-scurity/pkg/helper"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,16 +23,21 @@ func NewUserController(pictureServ service.PictureService) UserController {
 func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
-		Topic:    "broker/farm-scurity",
-		Payload:  "capture",
+		Topic:    "broker/farm-security",
+		Payload:  "TAKE_PHOTO",
 		MsgResp:  "ok",
 	}
 
-	respMQTT := broker.MQTTRequest(mqttRequest)
+	respMQTT, payload := broker.MQTTRequest(mqttRequest)
+
+	var pictureId string
+	parts := strings.Split(payload, "pictureId:")
+	if len(parts) == 2 {
+		pictureId = strings.TrimSpace(parts[1])
+	}
 
 	if respMQTT {
-		response := controller.PictureServ.GetLastPicture(ctx.Request.Context())
-		helper.Response(ctx, http.StatusOK, "Ok", response)
+		helper.Response(ctx, http.StatusOK, "Ok", pictureId)
 	} else {
 		panic(exception.NewBadRequestError("failed to capture"))
 	}
@@ -41,12 +47,12 @@ func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 func (controller *UserControllerImpl) TurnOn(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
-		Topic:    "broker/farm-scurity",
+		Topic:    "broker/farm-security",
 		Payload:  "ALARM_ON",
 		MsgResp:  "ok",
 	}
 
-	respMQTT := broker.MQTTRequest(mqttRequest)
+	respMQTT, _ := broker.MQTTRequest(mqttRequest)
 	if respMQTT {
 		helper.Response(ctx, http.StatusOK, "Ok", "")
 	} else {
@@ -58,12 +64,12 @@ func (controller *UserControllerImpl) TurnOn(ctx *gin.Context) {
 func (controller *UserControllerImpl) TurnOff(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
-		Topic:    "broker/farm-scurity",
+		Topic:    "broker/farm-security",
 		Payload:  "ALARM_OFF",
 		MsgResp:  "ok",
 	}
 
-	respMQTT := broker.MQTTRequest(mqttRequest)
+	respMQTT, _ := broker.MQTTRequest(mqttRequest)
 	if respMQTT {
 		helper.Response(ctx, http.StatusOK, "Ok", "")
 	} else {
