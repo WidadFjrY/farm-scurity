@@ -45,6 +45,7 @@ func (serv *HistoryServiceImpl) GetAll(ctx context.Context) []web.HistoryRespons
 				PictureID:   *historiModel.PictureID,
 				Description: historiModel.Description,
 				Operation:   historiModel.Operation,
+				IsRead:      historiModel.IsRead,
 				CreatedAt:   historiModel.CreatedAt.Format("15:04:01 02 Jan 2006"),
 			}
 			histories = append(histories, history)
@@ -80,4 +81,11 @@ func (serv *HistoryServiceImpl) DeleteById(ctx context.Context, historyId string
 		return nil
 	})
 	helper.Err(err)
+}
+
+func (serv *HistoryServiceImpl) UpdateIsRead(ctx context.Context, historyId string) {
+	helper.Err(serv.DB.Transaction(func(tx *gorm.DB) error {
+		serv.Repo.UpdateIsRead(ctx, tx, historyId)
+		return nil
+	}))
 }

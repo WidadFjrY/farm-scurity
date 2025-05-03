@@ -110,7 +110,10 @@ fun MyTopBar(title: String, navController: NavController) {
             )
         },
         navigationIcon = {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = { navController.navigate("home") {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            } }) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Kembali",

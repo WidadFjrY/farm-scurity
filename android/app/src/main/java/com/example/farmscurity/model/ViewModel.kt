@@ -103,6 +103,18 @@ class ApiServiceViewModel : ViewModel() {
         }
     }
 
+    fun setIsRead(historyId: String){
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.setIsRead(historyId)
+                if (response.code == 200){
+                    //
+                }
+            } catch (e: Exception){
+                //
+            }
+        }
+    }
 
     fun alarm(isActive: Boolean, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {

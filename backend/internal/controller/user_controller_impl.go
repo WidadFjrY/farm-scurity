@@ -23,7 +23,7 @@ func NewUserController(pictureServ service.PictureService) UserController {
 func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
-		Topic:    "broker/farm-security",
+		Topic:    "bido_dihara/broker/farm-security",
 		Payload:  "TAKE_PHOTO",
 		MsgResp:  "ok",
 	}
@@ -47,7 +47,7 @@ func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 func (controller *UserControllerImpl) TurnOn(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
-		Topic:    "broker/farm-security",
+		Topic:    "bido_dihara/broker/farm-security",
 		Payload:  "ALARM_ON",
 		MsgResp:  "ok",
 	}
@@ -64,7 +64,7 @@ func (controller *UserControllerImpl) TurnOn(ctx *gin.Context) {
 func (controller *UserControllerImpl) TurnOff(ctx *gin.Context) {
 	mqttRequest := web.MQTTRequest{
 		ClientId: "SERVER",
-		Topic:    "broker/farm-security",
+		Topic:    "bido_dihara/broker/farm-security",
 		Payload:  "ALARM_OFF",
 		MsgResp:  "ok",
 	}

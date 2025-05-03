@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  security-farm:
+    build: .
+    container_name: security-farm
+    volumes:
+      - ./public/images:/app/public/images
+    environment:
+      - MQTT_HOST=mosquitto 
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mosquitto  
+    restart: unless-stopped
+
+    mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    restart: unless-stopped

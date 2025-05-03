@@ -20,4 +20,13 @@ data class History(
     val createdAt: String,
     @SerializedName("description")
     val description: String,
+    @SerializedName("is_read")
+    val isRead: Boolean
+)
+
+data class SetIsRead(
+    @SerializedName("id")
+    val id: String,
+    @SerializedName("is_read")
+    val isRead: Boolean,
 )

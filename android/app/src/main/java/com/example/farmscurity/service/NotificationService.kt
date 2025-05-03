@@ -3,6 +3,7 @@ package com.example.farmscurity.service
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,6 +13,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.farmscurity.MainActivity
 import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter
 import com.hivemq.client.mqtt.datatypes.MqttQos
@@ -24,7 +26,7 @@ class MQTTServiceNotification : Service() {
 
     private val mqttClient = MqttClient.builder()
         .useMqttVersion3()
-        .serverHost("192.168.1.6")
+        .serverHost("broker.hivemq.com")
         .serverPort(1883)
         .buildBlocking()
 
@@ -68,7 +70,7 @@ class MQTTServiceNotification : Service() {
         try {
             mqttClient.connect()
             Log.d("com.example.farmscurity.service.MQTTService", "✅ Connected to MQTT Broker")
-            subscribe("broker/farm-security/notification")
+            subscribe("bido_dihara/broker/farm-security/notification")
         } catch (e: Exception) {
             Log.e("com.example.farmscurity.service.MQTTService", "❌ Failed to connect: ${e.message}")
         }
@@ -102,11 +104,25 @@ class MQTTServiceNotification : Service() {
     private fun showNotification(title: String, message: String) {
         Log.d("com.example.farmscurity.service.MQTTService", "🔔 Showing notification: $title - $message")
 
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("title", title)
+            putExtra("message", message)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
 

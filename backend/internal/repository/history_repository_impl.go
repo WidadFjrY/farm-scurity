@@ -48,3 +48,9 @@ func (repo *HistoryRepositoryImpl) DeleteById(ctx context.Context, tx *gorm.DB, 
 
 	helper.Err(err)
 }
+
+func (repo *HistoryRepositoryImpl) UpdateIsRead(ctx context.Context, tx *gorm.DB, historyId string) {
+	helper.Err(tx.WithContext(ctx).Table("histories").Where("id = ?", historyId).Updates(map[string]interface{}{
+		"is_read": true,
+	}).Error)
+}

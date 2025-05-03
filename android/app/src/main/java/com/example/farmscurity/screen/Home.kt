@@ -23,14 +23,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Divider
+import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Switch
 import androidx.compose.material.SwitchDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -153,6 +158,72 @@ fun HistoryScreen(viewModel: ApiServiceViewModel = viewModel(), navController: N
                 Spacer(modifier = Modifier.height(12.dp))
                 Column {
                     historyItems.forEachIndexed { index, history ->
+                        if (!history.isRead) {
+                            AlertDialog(
+                                onDismissRequest = {  },
+                                title = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ){
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = null,
+                                            tint = Color.Red,
+                                            modifier = Modifier
+                                                .size(70.dp)
+
+                                        )
+                                    }
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Gerakan Terdeteksi‼️",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp,
+                                            color = Color.Black,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = history.description,
+                                            fontSize = 14.sp,
+                                            color = Color.Gray,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                },
+                                confirmButton = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                color = Color(0xFF45556C),
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                            .clickable {
+                                                viewModel.setIsRead(history.id)
+                                                navController.navigate("capture/${history.pictureId}/false")
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 24.dp)
+                                    ) {
+                                        Text(
+                                            "Lihat Info",
+                                            modifier = Modifier.align(Alignment.Center),
+                                            style = MyTypography.titleMedium,
+                                            color = Color.White
+                                        )
+                                    }
+                                },
+                                dismissButton = {}
+                            )
+                        }
                         Column(
                             modifier = Modifier.padding(horizontal = 16.dp)
                         ) {
@@ -478,10 +549,7 @@ fun Home(navController: NavController, viewModel: ApiServiceViewModel = viewMode
                             text = "Halo, User",
                             style = MyTypography.bodyLarge
                         )
-                        Image(
-                            painterResource(id = R.drawable.notification),
-                            contentDescription = "Notification Icon"
-                        )
+
                     }
                 }
 

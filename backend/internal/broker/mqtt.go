@@ -9,7 +9,7 @@ import (
 )
 
 func MQTTRequest(mqttConf web.MQTTRequest) (bool, string) {
-	broker := "tcp://localhost:1883"
+	broker := "tcp://broker.hivemq.com:1883"
 	var payload string
 	opts := mqtt.NewClientOptions().AddBroker(broker).SetClientID(mqttConf.ClientId)
 	client := mqtt.NewClient(opts)
@@ -41,7 +41,7 @@ func MQTTRequest(mqttConf web.MQTTRequest) (bool, string) {
 		panic(token.Error())
 	}
 
-	timeOut := 5
+	timeOut := 10
 
 	select {
 	case <-done:

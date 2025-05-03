@@ -7,5 +7,6 @@ type History struct {
 	Operation   string  `gorm:"type:char(255);not null"`
 	Description string  `gorm:"type:char(255);not null"`
 	PictureID   *string `gorm:"type:char(15);unique"`
+	IsRead      bool    `gorm:"type:bool;default:false"`
 	CreatedAt   time.Time
 }

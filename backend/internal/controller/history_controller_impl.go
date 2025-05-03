@@ -25,13 +25,20 @@ func (controller *HistoryControllerImpl) GetAll(ctx *gin.Context) {
 func (controller *HistoryControllerImpl) GetById(ctx *gin.Context) {
 	historyId := ctx.Params.ByName("historyId")
 
-	response := controller.Serv.GetById(ctx, historyId)
+	response := controller.Serv.GetById(ctx.Request.Context(), historyId)
 	helper.Response(ctx, http.StatusOK, "Ok", response)
 }
 
 func (controller *HistoryControllerImpl) DeleteById(ctx *gin.Context) {
 	historyId := ctx.Params.ByName("historyId")
 
-	controller.Serv.DeleteById(ctx, historyId)
+	controller.Serv.DeleteById(ctx.Request.Context(), historyId)
 	helper.Response(ctx, http.StatusOK, "Ok", "Deleted")
+}
+
+func (controller *HistoryControllerImpl) UpdateIsRead(ctx *gin.Context) {
+	historyId := ctx.Params.ByName("historyId")
+
+	controller.Serv.UpdateIsRead(ctx.Request.Context(), historyId)
+	helper.Response(ctx, http.StatusOK, "Ok", "updated")
 }

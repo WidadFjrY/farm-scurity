@@ -77,6 +77,8 @@ dependencies {
     implementation(libs.hivemq.mqtt.client)
     implementation(libs.accompanist.permissions)
 
+    implementation(libs.netty.codec.http)
+
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.androidx.material)
