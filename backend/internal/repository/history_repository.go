@@ -13,4 +13,5 @@ type HistoryRepository interface {
 	GetById(ctx context.Context, tx *gorm.DB, historyId string) model.History
 	UpdateIsRead(ctx context.Context, tx *gorm.DB, historyId string)
 	DeleteById(ctx context.Context, tx *gorm.DB, historyId string)
+	DeleteAll(ctx context.Context, tx *gorm.DB)
 }

@@ -7,4 +7,5 @@ type HistoryController interface {
 	GetById(ctx *gin.Context)
 	UpdateIsRead(ctx *gin.Context)
 	DeleteById(ctx *gin.Context)
+	DeleteAll(ctx *gin.Context)
 }

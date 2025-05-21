@@ -54,3 +54,8 @@ func (repo *HistoryRepositoryImpl) UpdateIsRead(ctx context.Context, tx *gorm.DB
 		"is_read": true,
 	}).Error)
 }
+
+func (repo *HistoryRepositoryImpl) DeleteAll(ctx context.Context, tx *gorm.DB) {
+	helper.Err(tx.WithContext(ctx).Table("histories").Where("1 = 1").Delete(nil).Error)
+	helper.Err(tx.WithContext(ctx).Table("pictures").Where("1 = 1").Delete(nil).Error)
+}

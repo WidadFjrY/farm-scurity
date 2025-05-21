@@ -12,7 +12,6 @@
 #define LED_GREEN 32
 
 // PIN Kamera
-
 #define PWDN_GPIO_NUM -1
 #define RESET_GPIO_NUM -1
 #define XCLK_GPIO_NUM 21
@@ -43,7 +42,6 @@ bool isPir3Active = true;
 // Konfigurasi WIFI & Endpoint server
 const char *ssid = "POCO F5";
 const char *password = "TofuGoreng";
-// const char* serverUrl = "http://192.168.1.7:8080/api/";
 const char *serverUrl = "http://farm.dihara.my.id/api/";
 
 // Konfigurasi Broker
@@ -59,8 +57,10 @@ bool takePhoto = false;
 void setup()
 {
   Serial.begin(115200);
+
   startCamera();
   connectToWiFi();
+
   client.setServer(mqttServer, mqttPort);
   client.setCallback(mqttCallback);
 
@@ -182,6 +182,7 @@ void sendPhoto(const char *deviceId, bool isFromUser)
   camera_fb_t *fb2 = esp_camera_fb_get();
   esp_camera_fb_return(fb2);
   Serial.println("Sukses initial gambar");
+
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb)
   {

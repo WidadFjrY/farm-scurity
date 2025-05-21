@@ -10,4 +10,5 @@ func HistoryRouter(router *gin.Engine, cntrl controller.HistoryController) {
 	router.GET("/api/histories/", cntrl.GetAll)
 	router.DELETE("/api/history/:historyId", cntrl.DeleteById)
 	router.PUT("/api/history/:historyId", cntrl.UpdateIsRead)
+	router.DELETE("/api/histories", cntrl.DeleteAll)
 }

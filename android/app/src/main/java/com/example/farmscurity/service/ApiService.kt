@@ -11,6 +11,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.create
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -37,10 +38,14 @@ interface ApiService {
 
     @PUT("history/{historyId}")
     suspend fun setIsRead(@Path("historyId") historyId: String): ApiResponse
+
+    @DELETE("histories")
+    suspend fun deleteHistory(): ApiResponse
 }
 
 object RetrofitInstance {
     private const val BASE_URL = "http://farm.test.dihara.my.id/api/"
+//    private const val BASE_URL = "http://192.168.1.7:8080/api/"
 
     private val gson = GsonBuilder()
         .setDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")

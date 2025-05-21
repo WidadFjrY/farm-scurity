@@ -29,6 +29,7 @@ import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Switch
 import androidx.compose.material.SwitchDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -155,6 +156,18 @@ fun HistoryScreen(viewModel: ApiServiceViewModel = viewModel(), navController: N
         )
         {
             Column {
+                Button(
+                    onClick = { viewModel.deleteHistory() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF2B2B)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Hapus", tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Hapus Semua Riwayat", color = Color.White, style = MyTypography.bodySmall,)
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 Column {
                     historyItems.forEachIndexed { index, history ->

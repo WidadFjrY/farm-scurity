@@ -11,4 +11,5 @@ type HistoryService interface {
 	GetById(ctx context.Context, historyId string) web.HistoryResponse
 	UpdateIsRead(ctx context.Context, historyId string)
 	DeleteById(ctx context.Context, historyId string)
+	DeleteAll(ctx context.Context)
 }

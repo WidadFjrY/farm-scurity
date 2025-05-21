@@ -42,3 +42,8 @@ func (controller *HistoryControllerImpl) UpdateIsRead(ctx *gin.Context) {
 	controller.Serv.UpdateIsRead(ctx.Request.Context(), historyId)
 	helper.Response(ctx, http.StatusOK, "Ok", "updated")
 }
+
+func (controller *HistoryControllerImpl) DeleteAll(ctx *gin.Context) {
+	controller.Serv.DeleteAll(ctx.Request.Context())
+	helper.Response(ctx, http.StatusOK, "Ok", "")
+}

@@ -89,3 +89,10 @@ func (serv *HistoryServiceImpl) UpdateIsRead(ctx context.Context, historyId stri
 		return nil
 	}))
 }
+
+func (serv *HistoryServiceImpl) DeleteAll(ctx context.Context) {
+	helper.Err(serv.DB.Transaction(func(tx *gorm.DB) error {
+		serv.Repo.DeleteAll(ctx, tx)
+		return nil
+	}))
+}

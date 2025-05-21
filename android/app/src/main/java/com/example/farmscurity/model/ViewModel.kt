@@ -144,4 +144,17 @@ class ApiServiceViewModel : ViewModel() {
             }
         }
     }
+
+    fun deleteHistory(){
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.deleteHistory()
+                if (response.code == 200){
+                    _historyList.value = emptyList()
+                }
+            } catch (e: Exception){
+                Log.d("DELETE ERROR", e.toString())
+            }
+        }
+    }
 }
