@@ -28,7 +28,7 @@ func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 		MsgResp:  "ok",
 	}
 
-	respMQTT, payload := broker.MQTTRequest(mqttRequest)
+	respMQTT, payload := broker.MQTTRequest(mqttRequest, false)
 
 	var pictureId string
 	parts := strings.Split(payload, "pictureId:")
@@ -52,7 +52,7 @@ func (controller *UserControllerImpl) TurnOn(ctx *gin.Context) {
 		MsgResp:  "ok",
 	}
 
-	respMQTT, _ := broker.MQTTRequest(mqttRequest)
+	respMQTT, _ := broker.MQTTRequest(mqttRequest, false)
 	if respMQTT {
 		helper.Response(ctx, http.StatusOK, "Ok", "")
 	} else {
@@ -69,7 +69,7 @@ func (controller *UserControllerImpl) TurnOff(ctx *gin.Context) {
 		MsgResp:  "ok",
 	}
 
-	respMQTT, _ := broker.MQTTRequest(mqttRequest)
+	respMQTT, _ := broker.MQTTRequest(mqttRequest, false)
 	if respMQTT {
 		helper.Response(ctx, http.StatusOK, "Ok", "")
 	} else {

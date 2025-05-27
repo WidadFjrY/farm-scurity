@@ -8,7 +8,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func MQTTRequest(mqttConf web.MQTTRequest) (bool, string) {
+func MQTTRequest(mqttConf web.MQTTRequest, isNotification bool) (bool, string) {
 	broker := "tcp://broker.hivemq.com:1883"
 	var payload string
 	opts := mqtt.NewClientOptions().AddBroker(broker).SetClientID(mqttConf.ClientId)
@@ -24,30 +24,33 @@ func MQTTRequest(mqttConf web.MQTTRequest) (bool, string) {
 		panic(token.Error())
 	}
 
-	done := make(chan bool)
+	if !isNotification {
+		done := make(chan bool)
 
-	token = client.Subscribe(mqttConf.Topic, 1, func(client mqtt.Client, msg mqtt.Message) {
-		if strings.HasPrefix(string(msg.Payload()), "ok") {
-			client.Disconnect(250)
+		token = client.Subscribe(mqttConf.Topic, 1, func(client mqtt.Client, msg mqtt.Message) {
+			if strings.HasPrefix(string(msg.Payload()), "ok") {
+				client.Disconnect(250)
+				payload = string(msg.Payload())
+
+				done <- true
+			}
 			payload = string(msg.Payload())
+			done <- false
+		})
 
-			done <- true
+		if token.Wait() && token.Error() != nil {
+			panic(token.Error())
 		}
-		payload = string(msg.Payload())
-		done <- false
-	})
 
-	if token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		timeOut := 10
+
+		select {
+		case <-done:
+			return true, payload
+		case <-time.After(time.Duration(timeOut) * time.Second):
+			client.Disconnect(250)
+			return false, payload
+		}
 	}
-
-	timeOut := 10
-
-	select {
-	case <-done:
-		return true, payload
-	case <-time.After(time.Duration(timeOut) * time.Second):
-		client.Disconnect(250)
-		return false, payload
-	}
+	return true, payload
 }

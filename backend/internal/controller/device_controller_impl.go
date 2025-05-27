@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"farm-scurity/domain/web"
 	"farm-scurity/internal/broker"
 	"farm-scurity/internal/service"
@@ -28,26 +29,32 @@ func NewDeviceController(historyServ service.HistoryService, pictureServ service
 func (control *DeviceControllerImpl) Upload(ctx *gin.Context) {
 	pictureId := ctx.Param("picture_id")
 
-	contentType := ctx.GetHeader("Content-Type")
-	if contentType != "image/jpeg" {
+	file, header, err := ctx.Request.FormFile("imageFile")
+	if err != nil {
+		helper.Err(err)
+		return
+	}
+	defer file.Close()
+
+	if header.Header.Get("Content-Type") != "image/jpeg" {
 		panic(exception.NewBadRequestError("Invalid Content-Type! Expected image/jpeg"))
 	}
 
 	filePath := fmt.Sprintf("public/images/%s.jpg", pictureId)
-
 	out, err := os.Create(filePath)
 	if err != nil {
 		helper.Err(err)
+		return
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, ctx.Request.Body)
+	_, err = io.Copy(out, file)
 	if err != nil {
 		helper.Err(err)
+		return
 	}
 
 	control.PictureServ.Save(ctx.Request.Context(), filePath, pictureId)
-
 	helper.Response(ctx, http.StatusOK, "Ok", "success")
 }
 
@@ -59,13 +66,15 @@ func (control *DeviceControllerImpl) MotionDetected(ctx *gin.Context) {
 	helper.Err(err)
 
 	if request.MotionDetected {
-		control.HistoryServ.Create(ctx.Request.Context(), "Gerakan Terdeteksi", pictureId, fmt.Sprintf("Gerakan Terdeteksi dari Sensor PIR dengan ID  %s", request.DeviceId))
+		go func(pictureId string) {
+			control.HistoryServ.Create(context.Background(), "Gerakan Terdeteksi", pictureId, fmt.Sprintf("Gerakan Terdeteksi dari Sensor PIR dengan ID  %s", request.DeviceId))
+		}(pictureId)
 		broker.MQTTRequest(web.MQTTRequest{
 			ClientId: "SERVER",
 			Topic:    "bido_dihara/broker/farm-security/notification",
 			Payload:  fmt.Sprintf("Gerakan Terdeteksi dari Sensor PIR dengan ID %s", request.DeviceId),
 			MsgResp:  "ok",
-		})
+		}, true)
 	}
 
 	helper.Response(ctx, http.StatusOK, "Ok", "")
@@ -84,7 +93,7 @@ func (control *DeviceControllerImpl) SetIsActive(ctx *gin.Context) {
 		Topic:    "bido_dihara/broker/farm-security",
 		Payload:  fmt.Sprintf("DISABLE SENSOR ID: %s, IsActive: %s", request.ID, strconv.FormatBool(*request.IsActive)),
 		MsgResp:  "ok",
-	})
+	}, false)
 
 	if isSuccess {
 		control.DeviceServ.SetIsActive(ctx.Request.Context(), request)

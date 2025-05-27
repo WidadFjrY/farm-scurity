@@ -1,7 +1,10 @@
-#include "esp_camera.h"
+#include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <PubSubClient.h>
+#include "esp_camera.h"
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 // PIN GPIO yang digunakan
 #define PIR_PIN_1 13
@@ -42,21 +45,24 @@ bool isPir3Active = true;
 // Konfigurasi WIFI & Endpoint server
 const char *ssid = "POCO F5";
 const char *password = "TofuGoreng";
-const char *serverUrl = "http://farm.dihara.my.id/api/";
+const int serverPort = 80;
+String serverName = "farm.dihara.my.id";
 
 // Konfigurasi Broker
 const char *mqttServer = "broker.hivemq.com";
 const int mqttPort = 1883;
 const char *mqttTopic = "bido_dihara/broker/farm-security";
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+WiFiClient wifiClient;
+PubSubClient client(wifiClient);
 
 bool takePhoto = false;
 
 void setup()
 {
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
 
   startCamera();
   connectToWiFi();
@@ -104,7 +110,7 @@ void loop()
   {
     Serial.println("Gerakan terdeteksi oleh PIR 3");
     buzzerActive();
-    sendNotification(pirId3);
+    sendMotionEvent("", pirId3);
   }
   delay(1000);
 }
@@ -112,6 +118,8 @@ void loop()
 void startCamera()
 {
   camera_config_t config;
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer = LEDC_TIMER_0;
   config.pin_d0 = Y2_GPIO_NUM;
   config.pin_d1 = Y3_GPIO_NUM;
   config.pin_d2 = Y4_GPIO_NUM;
@@ -130,18 +138,26 @@ void startCamera()
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
 
-  config.frame_size = FRAMESIZE_VGA;
-  config.jpeg_quality = 30;
-  config.fb_count = 1;
+  if (psramFound())
+  {
+    config.frame_size = FRAMESIZE_SVGA;
+    config.jpeg_quality = 10;
+    config.fb_count = 2;
+  }
+  else
+  {
+    config.frame_size = FRAMESIZE_CIF;
+    config.jpeg_quality = 12;
+    config.fb_count = 1;
+  }
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK)
   {
-    Serial.printf("Kamera Gagal Inisialisasi Dengan Error 0x%x", err);
-    return;
+    Serial.printf("Camera init failed with error 0x%x", err);
+    delay(1000);
+    ESP.restart();
   }
 }
 
@@ -177,77 +193,169 @@ void reconnectMQTT()
   }
 }
 
-void sendPhoto(const char *deviceId, bool isFromUser)
+String sendPhoto(const char *deviceId, bool isFromUser)
 {
+  String getAll;
+  String getBody;
+
   camera_fb_t *fb2 = esp_camera_fb_get();
   esp_camera_fb_return(fb2);
+  if (!fb2)
+  {
+    Serial.println("Camera capture failed");
+    delay(1000);
+    ESP.restart();
+  }
   Serial.println("Sukses initial gambar");
 
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb)
   {
-    Serial.println("Gagal Mengambil Gambar");
-    return;
-  }
-  else
-  {
-    Serial.println("Sukses Mengambil Gambar");
+    Serial.println("Camera capture failed");
+    delay(1000);
+    ESP.restart();
   }
 
-  randomSeed(millis());
-  String pictureId = generateRandomString(15);
+  String filename = "esp32-" + String(millis()) + "-" + String(random(1000, 9999)) + ".jpg";
 
-  if (WiFi.status() == WL_CONNECTED)
+  if (wifiClient.connect(serverName.c_str(), serverPort))
   {
-    HTTPClient http;
-    http.useHTTP10(true);
-    http.setTimeout(10000);
+    String boundary = "SecurityFarm";
+    String head = "--" + boundary + "\r\n"
+                                    "Content-Disposition: form-data; name=\"imageFile\"; filename=\"" +
+                  filename + "\"\r\n"
+                             "Content-Type: image/jpeg\r\n\r\n";
+    String tail = "\r\n--" + boundary + "--\r\n";
 
-    String fullUrlUpload = String(serverUrl) + "upload/" + pictureId;
-    http.begin(fullUrlUpload);
-    http.addHeader("Content-Type", "image/jpeg");
-    http.addHeader("Connection", "close");
+    uint32_t imageLen = fb->len;
+    uint32_t extraLen = head.length() + tail.length();
+    uint32_t totalLen = imageLen + extraLen;
 
-    int httpResponseCode = http.POST(fb->buf, fb->len);
-    Serial.println(httpResponseCode);
-    Serial.println("Sukses Menggirim Gambar" + pictureId);
+    wifiClient.println("POST /api/upload/" + filename + " HTTP/1.1");
+    wifiClient.println("Host: " + serverName);
+    wifiClient.println("Content-Length: " + String(totalLen));
+    wifiClient.println("Content-Type: multipart/form-data; boundary=" + boundary);
+    wifiClient.println();
 
+    wifiClient.print(head);
+
+    uint8_t *fbBuf = fb->buf;
+    size_t fbLen = fb->len;
+    for (size_t n = 0; n < fbLen; n += 1024)
+    {
+      if (n + 1024 < fbLen)
+      {
+        wifiClient.write(fbBuf, 1024);
+        fbBuf += 1024;
+      }
+      else if (fbLen % 1024 > 0)
+      {
+        size_t remainder = fbLen % 1024;
+        wifiClient.write(fbBuf, remainder);
+      }
+    }
+
+    wifiClient.print(tail);
     esp_camera_fb_return(fb);
-    http.end();
+
+    int timoutTimer = 10000;
+    long startTimer = millis();
+    bool state = false;
+
+    while ((startTimer + timoutTimer) > millis())
+    {
+      Serial.print(".");
+      delay(100);
+      while (wifiClient.available())
+      {
+        char c = wifiClient.read();
+        if (c == '\n')
+        {
+          if (getAll.length() == 0)
+            state = true;
+          getAll = "";
+        }
+        else if (c != '\r')
+        {
+          getAll += String(c);
+        }
+        if (state == true)
+        {
+          getBody += String(c);
+        }
+        startTimer = millis();
+      }
+      if (getBody.length() > 0)
+        break;
+    }
+
+    Serial.println();
+    wifiClient.stop();
+    Serial.println(getBody);
 
     if (!isFromUser)
     {
-      HTTPClient http2;
-      String fullUrlMotion = String(serverUrl) + "motion-detected/" + pictureId;
-      http2.begin(fullUrlMotion);
-      http2.addHeader("Content-Type", "application/json");
-      http2.addHeader("Connection", "close");
-      String jsonBody = "{\"device_id\": \"" + String(deviceId) + "\", \"motion_detected\": true}";
-      int httpResponseCode2 = http2.POST(jsonBody);
-      Serial.println(httpResponseCode2);
-      http2.end();
+      sendMotionEvent(filename, deviceId);
     }
   }
   else
   {
-    Serial.println("WiFi Tidak Terhubung.");
+    getBody = "Connection to " + serverName + " failed.";
+    Serial.println(getBody);
   }
+
+  return getBody;
 }
 
-void sendNotification(const char *deviceId)
+String sendMotionEvent(String filename, String deviceId)
 {
-  randomSeed(millis());
-  String motionId = generateRandomString(15);
+  String getAll;
+  String getBody;
 
-  HTTPClient http;
-  String fullUrlMotion = String(serverUrl) + "motion-detected/" + motionId;
-  http.begin(fullUrlMotion);
-  http.addHeader("Content-Type", "application/json");
-  http.addHeader("Connection", "close");
-  String jsonBody = "{\"device_id\": \"" + String(deviceId) + "\", \"motion_detected\": true}";
-  int httpResponseCode2 = http.POST(jsonBody);
-  Serial.println(httpResponseCode2);
-  http.end();
+  if (filename == "")
+  {
+    filename = "motion-" + String(millis()) + "-" + String(random(1000, 9999));
+  }
+
+  String endpoint = "/api/motion-detected/" + filename;
+
+  if (wifiClient.connect(serverName.c_str(), serverPort))
+  {
+    Serial.println("Connected to server!");
+
+    String jsonBody = "{\"device_id\": \"" + deviceId + "\", \"motion_detected\": true}";
+    int contentLength = jsonBody.length();
+
+    wifiClient.println("POST " + endpoint + " HTTP/1.1");
+    wifiClient.println("Host: " + serverName);
+    wifiClient.println("Content-Type: application/json");
+    wifiClient.println("Content-Length: " + String(contentLength));
+    wifiClient.println();
+    wifiClient.print(jsonBody);
+
+    long startTimer = millis();
+    int timeout = 5000;
+    while (wifiClient.available() == 0 && millis() - startTimer < timeout)
+    {
+      delay(10);
+    }
+
+    while (wifiClient.available())
+    {
+      char c = wifiClient.read();
+      getBody += c;
+    }
+
+    wifiClient.stop();
+    Serial.println("Server response:");
+    Serial.println(getBody);
+  }
+  else
+  {
+    Serial.println("Connection failed!");
+  }
+
+  return getBody;
 }
 
 void mqttCallback(char *topic, byte *payload, unsigned int length)
@@ -265,6 +373,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   if (message == "TAKE_PHOTO")
   {
     sendPhoto(pirId1, true);
+    client.publish(mqttTopic, "ok");
   }
   else if (message == "BUZZER_ON")
   {
@@ -305,17 +414,6 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     }
     client.publish(mqttTopic, "ok");
   }
-}
-
-String generateRandomString(int length)
-{
-  const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*";
-  String randomString;
-  for (int i = 0; i < length; i++)
-  {
-    randomString += charset[random(sizeof(charset) - 2)];
-  }
-  return randomString;
 }
 
 void buzzerActive()

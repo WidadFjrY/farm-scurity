@@ -14,7 +14,7 @@ import coil.compose.rememberAsyncImagePainter
 @Composable
 fun NetworkImage(fileName: String) {
     Image(
-        painter = rememberAsyncImagePainter("http://farm.test.dihara.my.id/api/public/images/${fileName}.jpg"),
+        painter = rememberAsyncImagePainter("http://farm.dihara.my.id/api/public/images/${fileName}.jpg"),
         contentDescription = "Gambar dari URL",
         modifier = Modifier
             .fillMaxWidth()
