@@ -477,7 +477,9 @@ fun BottomSheet(viewModel: ApiServiceViewModel = viewModel()) {
                 sheetState = sheetState
             ) {
                 Column (
-                    modifier = Modifier.padding(horizontal = 24.dp)
+                    modifier = Modifier
+                        .background(color = Color.White)
+                        .padding(horizontal = 24.dp)
                 ) {
                     Text(text = "Ubah Sensor", style = MyTypography.bodyLarge)
                     Spacer(modifier = Modifier.height(24.dp))

@@ -38,20 +38,23 @@ const char *pirId1 = "SENPIR0001";
 const char *pirId2 = "SENPIR0002";
 const char *pirId3 = "SENPIR0003";
 
-bool isPir1Active = true;
-bool isPir2Active = true;
-bool isPir3Active = true;
+bool isPir1Active = false;
+bool isPir2Active = false;
+bool isPir3Active = false;
 
 // Konfigurasi WIFI & Endpoint server
 const char *ssid = "POCO F5";
-const char *password = "TofuGoreng";
+const char *password = "RyuJin1029";
 const int serverPort = 80;
 String serverName = "farm.dihara.my.id";
+// String serverName = "farm.test.dihara.my.id";
 
 // Konfigurasi Broker
 const char *mqttServer = "broker.hivemq.com";
 const int mqttPort = 1883;
 const char *mqttTopic = "bido_dihara/broker/farm-security";
+
+String picture = "";
 
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
@@ -139,18 +142,9 @@ void startCamera()
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
 
-  if (psramFound())
-  {
-    config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 10;
-    config.fb_count = 2;
-  }
-  else
-  {
-    config.frame_size = FRAMESIZE_CIF;
-    config.jpeg_quality = 12;
-    config.fb_count = 1;
-  }
+  config.frame_size = FRAMESIZE_QVGA;
+  config.jpeg_quality = 10;
+  config.fb_count = 1;
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK)
@@ -182,7 +176,6 @@ void reconnectMQTT()
     if (client.connect(clientId.c_str()))
     {
       Serial.println("Tersambung ke MQTT");
-      client.publish(mqttTopic, "Device online");
       client.subscribe(mqttTopic);
     }
     else
@@ -198,16 +191,6 @@ String sendPhoto(const char *deviceId, bool isFromUser)
   String getAll;
   String getBody;
 
-  camera_fb_t *fb2 = esp_camera_fb_get();
-  esp_camera_fb_return(fb2);
-  if (!fb2)
-  {
-    Serial.println("Camera capture failed");
-    delay(1000);
-    ESP.restart();
-  }
-  Serial.println("Sukses initial gambar");
-
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb)
   {
@@ -217,6 +200,7 @@ String sendPhoto(const char *deviceId, bool isFromUser)
   }
 
   String filename = "esp32-" + String(millis()) + "-" + String(random(1000, 9999)) + ".jpg";
+  picture = filename;
 
   if (wifiClient.connect(serverName.c_str(), serverPort))
   {
@@ -296,7 +280,7 @@ String sendPhoto(const char *deviceId, bool isFromUser)
     if (!isFromUser)
     {
       sendMotionEvent(filename, deviceId);
-    }
+    } 
   }
   else
   {
@@ -373,7 +357,10 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   if (message == "TAKE_PHOTO")
   {
     sendPhoto(pirId1, true);
-    client.publish(mqttTopic, "ok");
+    reconnectMQTT();
+    String message = "ok, pictureId: " + picture;
+    client.publish(mqttTopic, message.c_str());
+
   }
   else if (message == "BUZZER_ON")
   {

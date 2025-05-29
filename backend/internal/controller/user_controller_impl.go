@@ -6,6 +6,7 @@ import (
 	"farm-scurity/internal/service"
 	"farm-scurity/pkg/exception"
 	"farm-scurity/pkg/helper"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -36,12 +37,12 @@ func (controller *UserControllerImpl) Capture(ctx *gin.Context) {
 		pictureId = strings.TrimSpace(parts[1])
 	}
 
+	fmt.Println(parts)
 	if respMQTT {
 		helper.Response(ctx, http.StatusOK, "Ok", pictureId)
 	} else {
 		panic(exception.NewBadRequestError("failed to capture"))
 	}
-
 }
 
 func (controller *UserControllerImpl) TurnOn(ctx *gin.Context) {

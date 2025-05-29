@@ -1,5 +1,6 @@
 package com.example.farmscurity.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,7 +55,9 @@ fun Capture(
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = Color.White),
         topBar = {
             MyTopBar(
                 title = if (isCapture == true) "Hasil Tangkap Gambar" else "Gerakan Terdeteksi",
