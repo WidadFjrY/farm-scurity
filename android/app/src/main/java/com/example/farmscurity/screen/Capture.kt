@@ -16,6 +16,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -44,7 +45,7 @@ fun Capture(
     isCapture: Boolean?,
     viewModel: ApiServiceViewModel = viewModel()
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val backgroundColor = Color(0xFFF5F7FF)
     LaunchedEffect(Unit) {
         viewModel.fetchHistory()
     }
@@ -56,8 +57,7 @@ fun Capture(
 
     Scaffold(
         modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color.White),
+            .fillMaxSize(),
         topBar = {
             MyTopBar(
                 title = if (isCapture == true) "Hasil Tangkap Gambar" else "Gerakan Terdeteksi",
@@ -65,42 +65,44 @@ fun Capture(
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 32.dp, vertical = 8.dp),
-        ) {
-            if (pictureId != null) {
-                NetworkImage(fileName = pictureId)
+       Surface(color = backgroundColor) {
+           Column(
+               modifier = Modifier
+                   .fillMaxSize()
+                   .padding(innerPadding)
+                   .padding(horizontal = 32.dp, vertical = 8.dp),
+           ) {
+               if (pictureId != null) {
+                   NetworkImage(fileName = pictureId)
 
-                if (isCapture == false) {
-                    matchedHistory?.let { history ->
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = history.operation,
-                            style = MyTypography.titleLarge,
-                            color = Color(0xFF0F172B)
-                        )
-                        Text(
-                            text = history.createdAt,
-                            style = MyTypography.bodySmall,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = history.description,
-                            style = MyTypography.titleMedium
-                        )
+                   if (isCapture == false) {
+                       matchedHistory?.let { history ->
+                           Spacer(modifier = Modifier.height(24.dp))
+                           Text(
+                               text = history.operation,
+                               style = MyTypography.titleLarge,
+                               color = Color(0xFF0F172B)
+                           )
+                           Text(
+                               text = history.createdAt,
+                               style = MyTypography.bodySmall,
+                               color = Color.Gray
+                           )
+                           Spacer(modifier = Modifier.height(8.dp))
+                           Text(
+                               text = history.description,
+                               style = MyTypography.titleMedium
+                           )
 
-                    } ?: Text("Data tidak ditemukan.", color = Color.Red)
-                }
+                       } ?: Text("Data tidak ditemukan.", color = Color.Red)
+                   }
 
-            } else {
-                CircularProgressIndicator()
-                Text("Memuat gambar...", modifier = Modifier.padding(top = 8.dp))
-            }
-        }
+               } else {
+                   CircularProgressIndicator()
+                   Text("Memuat gambar...", modifier = Modifier.padding(top = 8.dp))
+               }
+           }
+       }
     }
 }
 

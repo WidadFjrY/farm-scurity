@@ -454,9 +454,10 @@ fun BottomSheet(viewModel: ApiServiceViewModel = viewModel()) {
     val sensorItems by viewModel.sensorList.collectAsState()
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize(),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier = Modifier
@@ -474,11 +475,11 @@ fun BottomSheet(viewModel: ApiServiceViewModel = viewModel()) {
         if (showBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
-                sheetState = sheetState
+                sheetState = sheetState,
+                containerColor = Color.White
             ) {
                 Column (
                     modifier = Modifier
-                        .background(color = Color.White)
                         .padding(horizontal = 24.dp)
                 ) {
                     Text(text = "Ubah Sensor", style = MyTypography.bodyLarge)
@@ -510,7 +511,8 @@ fun Home(navController: NavController, viewModel: ApiServiceViewModel = viewMode
         permission = Manifest.permission.POST_NOTIFICATIONS
     )
 
-    var isAlramActive by remember { mutableStateOf(false) }
+    var isCapture by remember { mutableStateOf(false) }
+    var isAlarmActive by remember { mutableStateOf(false) }
 
     val systemUiController = rememberSystemUiController()
     val backgroundColor = Color(0xFFF5F7FF)
@@ -577,43 +579,45 @@ fun Home(navController: NavController, viewModel: ApiServiceViewModel = viewMode
                 item { Spacer(modifier = Modifier.height(8.dp)) }
                 item {
                     val coroutineScope = rememberCoroutineScope()
-                    val context = LocalContext.current
-
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                color = Color(0xFF45556C),
+                                color = if(isCapture) Color.Gray else Color(0xFF45556C),
                                 shape = RoundedCornerShape(10.dp)
                             )
-                            .clickable {
-                                toastMessage = "Menangkap gambar"
+                            .let {
+                                if (!isCapture) {
+                                    it.clickable {
+                                        isCapture = true
+                                        toastMessage = "Menangkap gambar"
+                                        coroutineScope.launch {
+                                            val pictureId = viewModel.capture()
 
-                                coroutineScope.launch {
-                                    val result = viewModel.capture()
+                                            if (pictureId != null) {
+                                                navController.navigate("capture/$pictureId/true")
+                                                toastMessage = "Berhasil mengambil gambar"
+                                            } else {
+                                                toastMessage = "Gagal mengambil gambar"
+                                            }
 
-                                    if (result) {
-                                        val pictureId = viewModel.capture.value.firstOrNull()?.data
-                                        if (pictureId != null) {
-                                            navController.navigate("capture/$pictureId/true")
-                                            toastMessage = "Berhasil mengambil gambar"
-                                        } else {
-                                            toastMessage = "ID gambar tidak ditemukan"
+                                            isCapture = false
                                         }
-                                    } else {
-                                        toastMessage = "Gagal mengambil gambar"
                                     }
+                                } else {
+                                    it
                                 }
                             }
                             .padding(vertical = 12.dp, horizontal = 24.dp)
                     ) {
                         Text(
-                            "Tangkap Gambar",
+                            if (isCapture) "Mengambil..." else "Tangkap Gambar",
                             modifier = Modifier.align(Alignment.Center),
                             style = MyTypography.titleMedium,
                             color = Color.White
                         )
                     }
+
 
                 }
 
@@ -621,10 +625,10 @@ fun Home(navController: NavController, viewModel: ApiServiceViewModel = viewMode
                 item {
                     Button(
                         onClick = {
-                            isAlramActive = !isAlramActive
-                            viewModel.alarm(isActive = isAlramActive) {onResult ->
+                            isAlarmActive = !isAlarmActive
+                            viewModel.alarm(isActive = isAlarmActive) {onResult ->
                                 if (!onResult){
-                                    isAlramActive = !isAlramActive
+                                    isAlarmActive = !isAlarmActive
                                     toastMessage = "Gagal menyalakan Alarm"
                                 }
                             }
@@ -639,7 +643,7 @@ fun Home(navController: NavController, viewModel: ApiServiceViewModel = viewMode
 
                     ) {
                         Text(
-                            text = if (!isAlramActive) "Nyalakan Alarm" else "Matikan Alarm",
+                            text = if (!isAlarmActive) "Nyalakan Alarm" else "Matikan Alarm",
                             style = MyTypography.titleMedium,
                             color = Color(0xFF45556C)
                         )

@@ -87,21 +87,23 @@ class ApiServiceViewModel : ViewModel() {
         }
     }
 
-    suspend fun capture(): Boolean {
+    suspend fun capture(): String? {
         return try {
             val response = RetrofitInstance.api.capture()
             if (response.code == 200) {
+                val pictureId = response.data
                 _capture.value = listOf(response)
-                true
+                pictureId
             } else {
                 _capture.value = emptyList()
-                false
+                null
             }
         } catch (e: Exception) {
             _capture.value = emptyList()
-            false
+            null
         }
     }
+
 
     fun setIsRead(historyId: String){
         viewModelScope.launch {

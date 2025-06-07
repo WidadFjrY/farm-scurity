@@ -7,31 +7,52 @@
 #include "soc/rtc_cntl_reg.h"
 
 // PIN GPIO yang digunakan
-#define PIR_PIN_1 13
-#define PIR_PIN_2 15
-#define PIR_PIN_3 14
+#define PIR_PIN_1 12
+#define PIR_PIN_2 13
+#define PIR_PIN_3 15
 
-#define BUZZER_PIN 33
-#define LED_GREEN 32
+#define BUZZER_PIN 14
+#define LED_GREEN 2
+
+#define FLASH 4
 
 // PIN Kamera
-#define PWDN_GPIO_NUM -1
-#define RESET_GPIO_NUM -1
-#define XCLK_GPIO_NUM 21
-#define SIOD_GPIO_NUM 26
-#define SIOC_GPIO_NUM 27
+// #define PWDN_GPIO_NUM -1
+// #define RESET_GPIO_NUM -1
+// #define XCLK_GPIO_NUM 21
+// #define SIOD_GPIO_NUM 26
+// #define SIOC_GPIO_NUM 27
 
-#define Y9_GPIO_NUM 35
-#define Y8_GPIO_NUM 34
-#define Y7_GPIO_NUM 39
-#define Y6_GPIO_NUM 36
-#define Y5_GPIO_NUM 19
-#define Y4_GPIO_NUM 18
-#define Y3_GPIO_NUM 5
-#define Y2_GPIO_NUM 4
-#define VSYNC_GPIO_NUM 25
-#define HREF_GPIO_NUM 23
-#define PCLK_GPIO_NUM 22
+// #define Y9_GPIO_NUM 35
+// #define Y8_GPIO_NUM 34
+// #define Y7_GPIO_NUM 39
+// #define Y6_GPIO_NUM 36
+// #define Y5_GPIO_NUM 19
+// #define Y4_GPIO_NUM 18
+// #define Y3_GPIO_NUM 5
+// #define Y2_GPIO_NUM 4
+// #define VSYNC_GPIO_NUM 25
+// #define HREF_GPIO_NUM 23
+// #define PCLK_GPIO_NUM 22
+
+// CAMERA_MODEL_AI_THINKER
+#define PWDN_GPIO_NUM     32
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM      0
+#define SIOD_GPIO_NUM     26
+#define SIOC_GPIO_NUM     27
+
+#define Y9_GPIO_NUM       35
+#define Y8_GPIO_NUM       34
+#define Y7_GPIO_NUM       39
+#define Y6_GPIO_NUM       36
+#define Y5_GPIO_NUM       21
+#define Y4_GPIO_NUM       19
+#define Y3_GPIO_NUM       18
+#define Y2_GPIO_NUM        5
+#define VSYNC_GPIO_NUM    25
+#define HREF_GPIO_NUM     23
+#define PCLK_GPIO_NUM     22
 
 // ID Sensor
 const char *pirId1 = "SENPIR0001";
@@ -44,7 +65,7 @@ bool isPir3Active = false;
 
 // Konfigurasi WIFI & Endpoint server
 const char *ssid = "POCO F5";
-const char *password = "RyuJin1029";
+const char *password = "TofuGoreng";
 const int serverPort = 80;
 String serverName = "farm.dihara.my.id";
 // String serverName = "farm.test.dihara.my.id";
@@ -78,6 +99,7 @@ void setup()
   pinMode(PIR_PIN_3, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
+  pinMode(FLASH, OUTPUT);
 }
 
 void loop()
@@ -191,6 +213,7 @@ String sendPhoto(const char *deviceId, bool isFromUser)
   String getAll;
   String getBody;
 
+  digitalWrite(FLASH, HIGH);
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb)
   {
@@ -198,6 +221,7 @@ String sendPhoto(const char *deviceId, bool isFromUser)
     delay(1000);
     ESP.restart();
   }
+  digitalWrite(FLASH, LOW);
 
   String filename = "esp32-" + String(millis()) + "-" + String(random(1000, 9999)) + ".jpg";
   picture = filename;
@@ -413,13 +437,11 @@ void buzzerActive()
 void alarmActive()
 {
   digitalWrite(BUZZER_PIN, HIGH);
-  client.publish(mqttTopic, "ok");
 }
 
 void alarmNonActive()
 {
   digitalWrite(BUZZER_PIN, LOW);
-  client.publish(mqttTopic, "ok");
 }
 
 bool isMotionDetected(int pin)
